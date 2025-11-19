@@ -1,48 +1,80 @@
 """
-Database Schemas
+Database Schemas for SimpleCRM Pro
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a collection in MongoDB.
+Collection name is the lowercase of the class name.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime
 
-# Example schemas (replace with your own):
-
+# Users (basic auth placeholder)
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr
+    password_hash: str
+    name: Optional[str] = None
+    is_active: bool = True
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+# Companies
+class Company(BaseModel):
+    company_name: str
+    address: Optional[str] = None
+    website: Optional[str] = None
+    notes: Optional[str] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+# Contacts
+class Contact(BaseModel):
+    first_name: str
+    last_name: str
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    company_id: Optional[str] = Field(None, description="Reference to company _id as string")
+    tags: List[str] = []
+    source: Optional[str] = None
+    notes: Optional[str] = None
+    funnel_stage: Literal[
+        "New",
+        "Contacted",
+        "Qualified",
+        "Proposal Sent",
+        "Negotiation",
+        "Won",
+        "Lost",
+    ] = "New"
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+# Deals
+class Deal(BaseModel):
+    deal_name: str
+    value: float
+    stage: Literal[
+        "New",
+        "Contacted",
+        "Proposal Sent",
+        "Negotiation",
+        "Won",
+        "Lost",
+    ] = "New"
+    contact_id: Optional[str] = None
+    company_id: Optional[str] = None
+    deadline: Optional[str] = None
+    notes: Optional[str] = None
+
+# Activities/Timeline items
+class Activity(BaseModel):
+    entity_type: Literal["contact", "deal", "company"]
+    entity_id: str
+    type: Literal["deal_update", "email_sent", "status_change", "note"]
+    message: str
+    meta: dict = {}
+
+# Email Campaigns
+class EmailCampaign(BaseModel):
+    subject: str
+    html: str
+    segment: Literal["all_contacts", "by_tag", "by_company", "funnel_stage"]
+    tag: Optional[str] = None
+    company_id: Optional[str] = None
+    funnel_stage: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+
